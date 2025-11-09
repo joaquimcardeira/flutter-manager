@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'devices_list_page.dart';
 import '../services/socket_service.dart';
 import '../services/api_service.dart';
 import '../models/device.dart';
 import '../models/position.dart';
+import '../widgets/devices_list_view.dart';
 import '../widgets/map_view.dart';
 import '../widgets/profile_view.dart';
 
@@ -49,7 +49,7 @@ class _MainPageState extends State<MainPage> {
   Widget _buildCurrentScreen() {
     switch (_selectedIndex) {
       case 1:
-        return DevicesListPage(
+        return DevicesListView(
           devices: _devices,
           positions: _positions,
         );

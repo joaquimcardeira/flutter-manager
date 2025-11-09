@@ -1,6 +1,6 @@
 {
   "version": 8,
-  "name": "Google Maps Raster",
+  "name": "Map Style",
   "sources": {
     "google-maps-raster": {
       "type": "raster",

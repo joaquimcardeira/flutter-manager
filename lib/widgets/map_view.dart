@@ -1,7 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import '../constants/map_style.dart';
 import '../models/device.dart';
 import '../models/position.dart';
 
@@ -21,19 +21,9 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> {
   MapLibreMapController? mapController;
-  String? _mapStyle;
   bool _hasInitiallyFit = false;
 
   static const String _sourceId = 'devices-source';
-
-  // Default location (San Francisco)
-  final LatLng _center = const LatLng(37.7749, -122.4194);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMapStyle();
-  }
 
   @override
   void didUpdateWidget(MapView oldWidget) {
@@ -47,13 +37,6 @@ class _MapViewState extends State<MapView> {
       _fitMapToDevices();
       _hasInitiallyFit = true;
     }
-  }
-
-  Future<void> _loadMapStyle() async {
-    final style = await rootBundle.loadString('assets/map_style.json');
-    setState(() {
-      _mapStyle = style;
-    });
   }
 
   void _onMapCreated(MapLibreMapController controller) {
@@ -153,14 +136,10 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_mapStyle == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return MapLibreMap(
       onMapCreated: _onMapCreated,
-      initialCameraPosition: CameraPosition(target: _center),
-      styleString: _mapStyle!,
+      initialCameraPosition: CameraPosition(target: LatLng(0, 0)),
+      styleString: mapStyle,
       myLocationEnabled: true,
     );
   }
