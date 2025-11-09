@@ -32,11 +32,16 @@ class _MainPageState extends State<MainPage> {
   ];
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
     final devices = await _apiService.fetchDevices();
     final devicesMap = <int, Device>{};
     for (var device in devices) { devicesMap[device.id] = device; }
+    if (!mounted) return;
     setState(() {_devices.addAll(devicesMap);});
     await _connectSocket();
   }

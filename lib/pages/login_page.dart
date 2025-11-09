@@ -30,7 +30,6 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     setState(() => _loading = false);
     if (ok) {
-      // After successful login, return to root so AuthGate can re-check session
       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     } else {
       setState(() => _error = msg ?? 'Login failed');
