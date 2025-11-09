@@ -142,7 +142,7 @@ class _DeviceListItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getStatusColor().withOpacity(0.2),
+          backgroundColor: _getStatusColor().withValues(alpha: 0.2),
           child: Icon(
             _getDeviceIcon(),
             color: _getStatusColor(),

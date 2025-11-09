@@ -168,7 +168,7 @@ class _MainPageState extends State<MainPage> {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                         child: Icon(
                           Icons.person,
                           size: 40,
