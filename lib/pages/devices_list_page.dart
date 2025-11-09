@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../models/device.dart';
 import '../models/position.dart';
 
-class DevicesListScreen extends StatelessWidget {
+class DevicesListPage extends StatelessWidget {
   final Map<int, Device> devices;
   final Map<int, Position> positions;
   final VoidCallback? onRefresh;
 
-  const DevicesListScreen({
+  const DevicesListPage({
     super.key,
     required this.devices,
     required this.positions,

@@ -22,11 +22,9 @@ class MapWidget extends StatefulWidget {
 class _MapWidgetState extends State<MapWidget> {
   MapLibreMapController? mapController;
   String? _mapStyle;
-  bool _sourceLayerAdded = false;
   bool _hasInitiallyFit = false;
 
   static const String _sourceId = 'devices-source';
-  static const String _layerId = 'devices-layer';
 
   // Default location (San Francisco)
   final LatLng _center = const LatLng(37.7749, -122.4194);
@@ -40,21 +38,19 @@ class _MapWidgetState extends State<MapWidget> {
   @override
   void didUpdateWidget(MapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _update();
+  }
 
-    // Update map when positions change
-    if (widget.positions != oldWidget.positions) {
-      _updateMapSource();
-
-      // Fit map to devices on first position update
-      if (!_hasInitiallyFit && widget.positions.isNotEmpty) {
-        _fitMapToDevices();
-        _hasInitiallyFit = true;
-      }
+  void _update() {
+    _updateMapSource();
+    if (!_hasInitiallyFit && widget.positions.isNotEmpty) {
+      _fitMapToDevices();
+      _hasInitiallyFit = true;
     }
   }
 
   Future<void> _loadMapStyle() async {
-    final style = await rootBundle.loadString('assets/google_maps_style.json');
+    final style = await rootBundle.loadString('assets/map_style.json');
     setState(() {
       _mapStyle = style;
     });
@@ -62,25 +58,17 @@ class _MapWidgetState extends State<MapWidget> {
 
   void _onMapCreated(MapLibreMapController controller) {
     mapController = controller;
-
-    // If we already have positions, update source and fit bounds
-    if (widget.positions.isNotEmpty) {
-      _updateMapSource();
-      if (!_hasInitiallyFit) {
-        _fitMapToDevices();
-        _hasInitiallyFit = true;
-      }
-    }
+    _update();
   }
 
   Future<void> _updateMapSource() async {
     if (mapController == null) {
-      dev.log('[Map] MapController is null, skipping source update', name: 'TraccarMap');
+      dev.log('[Map] MapController is null, skipping source update', name: 'Map');
       return;
     }
 
     dev.log('[Map] Updating source - Devices: ${widget.devices.length}, Positions: ${widget.positions.length}',
-        name: 'TraccarMap');
+        name: 'Map');
 
     try {
       // Build GeoJSON features for all devices with positions
@@ -116,31 +104,9 @@ class _MapWidgetState extends State<MapWidget> {
         'features': features,
       };
 
-      // Add source and layer on first update
-      if (!_sourceLayerAdded) {
-        await mapController!.addSource(
-          _sourceId,
-          GeojsonSourceProperties(data: geojson),
-        );
-
-        await mapController!.addCircleLayer(
-          _sourceId,
-          _layerId,
-          CircleLayerProperties(
-            circleRadius: 8,
-            circleColor: '#FF0000',
-            circleStrokeWidth: 2,
-            circleStrokeColor: '#FFFFFF',
-          ),
-        );
-
-        _sourceLayerAdded = true;
-        dev.log('[Map] Added source and layer with ${features.length} feature(s)', name: 'TraccarMap');
-      } else {
-        // Update existing source with new data
-        await mapController!.setGeoJsonSource(_sourceId, geojson);
-        dev.log('[Map] Updated source with ${features.length} feature(s)', name: 'TraccarMap');
-      }
+      // Update the source that's already defined in the style
+      await mapController!.setGeoJsonSource(_sourceId, geojson);
+      dev.log('[Map] Updated source with ${features.length} feature(s)', name: 'TraccarMap');
     } catch (e, stack) {
       dev.log('[Map] Error updating source: $e', name: 'TraccarMap', error: e, stackTrace: stack);
     }
@@ -193,13 +159,9 @@ class _MapWidgetState extends State<MapWidget> {
 
     return MapLibreMap(
       onMapCreated: _onMapCreated,
-      initialCameraPosition: CameraPosition(
-        target: _center,
-        zoom: 11.0,
-      ),
+      initialCameraPosition: CameraPosition(target: _center),
       styleString: _mapStyle!,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.tracking,
     );
   }
 }

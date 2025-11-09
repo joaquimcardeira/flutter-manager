@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/traccar_auth_service.dart';
+import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
   String? _error;
 
-  final _auth = TraccarAuthService();
+  final _auth = AuthService();
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;

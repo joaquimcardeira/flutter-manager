@@ -1,13 +1,10 @@
 import 'dart:developer' as dev;
 import 'package:web_socket_channel/web_socket_channel.dart';
-
 import '../env/env.dart';
-import 'traccar_auth_service.dart';
-import 'ws_channel_factory_io.dart' if (dart.library.html) 'ws_channel_factory_web.dart';
+import 'auth_service.dart';
+import 'package:web_socket_channel/io.dart';
 
-/// Simple Traccar WebSocket client that connects to /api/socket using the
-/// existing session cookie (JSESSIONID).
-class TraccarSocketService {
+class SocketService {
   WebSocketChannel? _channel;
 
   WebSocketChannel? get channel => _channel;
@@ -24,10 +21,10 @@ class TraccarSocketService {
     final wsUrl = base.replaceFirst(RegExp('^https?'), wsScheme) + '/api/socket';
 
     try {
-      final cookie = await TraccarAuthService().getCookie();
+      final cookie = await AuthService().getCookie();
       final headers = <String, dynamic>{};
       if (cookie != null && cookie.isNotEmpty) headers['Cookie'] = cookie;
-      _channel = createWebSocketChannel(Uri.parse(wsUrl), headers: headers);
+      _channel = IOWebSocketChannel.connect(Uri.parse(wsUrl), headers: headers);
       dev.log('[WS] Connected to $wsUrl', name: 'TraccarWS');
       return true;
     } catch (e) {

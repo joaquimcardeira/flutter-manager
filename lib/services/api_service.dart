@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
-import 'traccar_auth_service.dart';
+import 'auth_service.dart';
 import '../models/device.dart';
 import '../models/position.dart';
 
-class TraccarApiService {
-  final TraccarAuthService _authService = TraccarAuthService();
+class ApiService {
+  final AuthService _authService = AuthService();
 
   /// Fetch all devices from Traccar API
   Future<List<Device>> fetchDevices() async {
-    final baseUrl = TraccarAuthService.baseUrl;
+    final baseUrl = AuthService.baseUrl;
     if (baseUrl.isEmpty) {
       dev.log('[API] Base URL not configured', name: 'TraccarAPI');
       return [];
@@ -47,7 +47,7 @@ class TraccarApiService {
 
   /// Fetch all positions from Traccar API
   Future<List<Position>> fetchPositions() async {
-    final baseUrl = TraccarAuthService.baseUrl;
+    final baseUrl = AuthService.baseUrl;
     if (baseUrl.isEmpty) {
       dev.log('[API] Base URL not configured', name: 'TraccarAPI');
       return [];

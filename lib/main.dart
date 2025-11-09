@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/login_page.dart';
+import 'pages/login_page.dart';
 import 'pages/main_page.dart';
-import 'services/traccar_auth_service.dart';
+import 'services/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const App());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = TraccarAuthService();
+    final auth = AuthService();
     return FutureBuilder<bool>(
       future: auth.sessionExists(),
       builder: (context, snapshot) {
@@ -40,7 +40,7 @@ class AuthGate extends StatelessWidget {
         }
         final loggedIn = snapshot.data == true;
         if (loggedIn) {
-          return const MainPage(title: 'Manager');
+          return const MainPage();
         } else {
           return const LoginPage();
         }

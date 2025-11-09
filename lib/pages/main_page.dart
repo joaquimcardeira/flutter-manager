@@ -4,24 +4,25 @@ import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import '../screens/devices_list_screen.dart';
-import '../services/traccar_socket_service.dart';
-import '../services/traccar_api_service.dart';
+import 'devices_list_page.dart';
+import '../services/socket_service.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../models/device.dart';
 import '../models/position.dart';
 import '../widgets/map_widget.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key, required this.title});
-  final String title;
+  const MainPage({super.key});
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-  final TraccarSocketService _socketService = TraccarSocketService();
-  final TraccarApiService _apiService = TraccarApiService();
+  final SocketService _socketService = SocketService();
+  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
   StreamSubscription? _wsSub;
 
   final Map<int, Device> _devices = {};
@@ -30,15 +31,14 @@ class _MainPageState extends State<MainPage> {
   // Icons for bottom navigation
   final List<IconData> _iconList = [
     Icons.map_outlined,
-    Icons.devices,
-    Icons.favorite_outline,
+    Icons.list,
     Icons.person_outline,
   ];
 
   @override
   void initState() {
     super.initState();
-    _initializeData();
+    _init();
   }
 
   /// Update devices state and trigger map refresh
@@ -56,19 +56,13 @@ class _MainPageState extends State<MainPage> {
   }
 
   /// Fetch initial data from API, then connect to websocket for real-time updates
-  Future<void> _initializeData() async {
-    dev.log('[Init] Fetching initial devices and positions', name: 'TraccarInit');
+  Future<void> _init() async {
     final devices = await _apiService.fetchDevices();
-
-    if (!mounted) return;
-
-    // Update devices using wrapper method
     final devicesMap = <int, Device>{};
     for (var device in devices) {
       devicesMap[device.id] = device;
     }
     _updateDevices(devicesMap);
-
     await _connectSocket();
   }
 
@@ -77,14 +71,14 @@ class _MainPageState extends State<MainPage> {
       case 0:
         return _buildMapView();
       case 1:
-        return DevicesListScreen(
+        return DevicesListPage(
           devices: _devices,
           positions: _positions,
         );
       case 2:
         return const Center(child: Text('Favorites - Coming Soon'));
       case 3:
-        return const Center(child: Text('Profile - Coming Soon'));
+        return _buildProfileView();
       default:
         return _buildMapView();
     }
@@ -154,6 +148,165 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  Widget _buildProfileView() {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _authService.getUser(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: ListView(
+            children: [
+              const SizedBox(height: 20),
+              // User Info Card
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        user?['name'] ?? 'User',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?['email'] ?? '',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Stats Card
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Statistics',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatItem(
+                            icon: Icons.devices,
+                            label: 'Devices',
+                            value: '${_devices.length}',
+                          ),
+                          _buildStatItem(
+                            icon: Icons.location_on,
+                            label: 'Active',
+                            value: '${_positions.length}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Logout'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _authService.logout();
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    }
+  }
+
   Future<void> _connectSocket() async {
     final ok = await _socketService.connect();
     if (!mounted) return;
@@ -171,27 +324,20 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _handleWebSocketMessage(dynamic event) {
-    try {
       if (event is! String) return;
 
       final data = jsonDecode(event) as Map<String, dynamic>;
-      dev.log('[WS] Received: ${data.keys.join(", ")}', name: 'TraccarWS');
 
-      bool updated = false;
-
-      // Parse devices and positions outside setState
       final Map<int, Device> newDevices = {};
       final Map<int, Position> newPositions = {};
 
-      // Handle devices
       if (data['devices'] != null) {
         final devicesList = data['devices'] as List;
         for (var deviceJson in devicesList) {
           final device = Device.fromJson(deviceJson as Map<String, dynamic>);
           newDevices[device.id] = device;
         }
-        dev.log('[WS] Received ${devicesList.length} device(s)', name: 'TraccarWS');
-        updated = true;
+        dev.log('Received ${devicesList.length} device(s)', name: 'WS');
       }
 
       // Handle positions
@@ -201,28 +347,17 @@ class _MainPageState extends State<MainPage> {
           final position = Position.fromJson(positionJson as Map<String, dynamic>);
           newPositions[position.deviceId] = position;
         }
-        dev.log('[WS] Received ${positionsList.length} position(s)', name: 'TraccarWS');
-        updated = true;
+        dev.log('Received ${positionsList.length} position(s)', name: 'WS');
       }
 
-      // Update state using wrapper methods
-      if (updated && mounted) {
-        // Update devices if any
-        if (newDevices.isNotEmpty) {
-          _updateDevices(newDevices);
-        }
-
-        // Update positions if any (automatically updates map)
-        if (newPositions.isNotEmpty) {
-          _updatePositions(newPositions);
-        }
-
-        dev.log('[WS] State updated - Devices: ${_devices.length}, Positions: ${_positions.length}', name: 'TraccarWS');
+      if (newDevices.isNotEmpty) {
+        _updateDevices(newDevices);
       }
-    } catch (e, stack) {
-      dev.log('[WS] Error parsing message: $e', name: 'TraccarWS', error: e, stackTrace: stack);
+
+      if (newPositions.isNotEmpty) {
+        _updatePositions(newPositions);
+      }
     }
-  }
 
   @override
   void dispose() {
@@ -235,21 +370,6 @@ class _MainPageState extends State<MainPage> {
     setState(() {
       _selectedIndex = index;
     });
-    // Handle menu item selection here
-    switch (index) {
-      case 0:
-        dev.log('Map selected', name: 'Navigation');
-        break;
-      case 1:
-        dev.log('Devices selected', name: 'Navigation');
-        break;
-      case 2:
-        dev.log('Favorites selected', name: 'Navigation');
-        break;
-      case 3:
-        dev.log('Profile selected', name: 'Navigation');
-        break;
-    }
   }
 
   @override
@@ -259,7 +379,6 @@ class _MainPageState extends State<MainPage> {
         children: [
           // Current screen content
           _buildCurrentScreen(),
-
           // Curved Navigation Bar Overlay
           Positioned(
             bottom: 0,
@@ -272,7 +391,6 @@ class _MainPageState extends State<MainPage> {
                 Icon(_iconList[0], size: 30, color: Colors.white),
                 Icon(_iconList[1], size: 30, color: Colors.white),
                 Icon(_iconList[2], size: 30, color: Colors.white),
-                Icon(_iconList[3], size: 30, color: Colors.white),
               ],
               color: Theme.of(context).colorScheme.primary,
               buttonBackgroundColor: Theme.of(context).colorScheme.primary,

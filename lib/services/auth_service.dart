@@ -4,16 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../env/env.dart';
 
-/// Traccar authentication and session utilities.
-///
-/// Traccar uses a session cookie (typically JSESSIONID). We store it so we can
-/// attach it to subsequent requests after app restarts.
-class TraccarAuthService {
+class AuthService {
   static const String _cookieKey = 'traccar_cookie';
   static const String _userKey = 'traccar_user';
 
-  /// Returns the Traccar base URL. Configure via --dart-define=TRACCAR_BASE_URL
-  /// or edit Env.traccarBaseUrl default.
   static String get baseUrl => Env.traccarBaseUrl;
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
@@ -28,8 +22,6 @@ class TraccarAuthService {
     return p.getString(_cookieKey);
   }
 
-  /// Exposes the stored session cookie (e.g., JSESSIONID=...) for services that
-  /// need to attach it to non-HTTP-client channels (like WebSockets on IO).
   Future<String?> getCookie() => _getCookie();
 
   Future<void> _clearCookie() async {
@@ -59,9 +51,7 @@ class TraccarAuthService {
   }
 
   Map<String, String> _headersWithCookie([Map<String, String>? extra]) {
-    final headers = <String, String>{
-      'accept': 'application/json',
-    };
+    final headers = <String, String>{'accept': 'application/json'};
     if (extra != null) headers.addAll(extra);
     return headers;
   }
@@ -70,12 +60,11 @@ class TraccarAuthService {
     final cookie = await _getCookie();
     final headers = _headersWithCookie();
     if (cookie != null && cookie.isNotEmpty) {
-      headers['Cookie'] = cookie; // e.g., JSESSIONID=...; other cookies
+      headers['Cookie'] = cookie;
     }
     return headers;
   }
 
-  /// Check if a valid session exists by calling GET /api/session
   Future<bool> sessionExists() async {
     if (baseUrl.isEmpty) return false;
 
@@ -84,14 +73,11 @@ class TraccarAuthService {
     try {
       final resp = await http.get(uri, headers: headers);
       if (resp.statusCode == 200) {
-        // Persist any updated cookie from Set-Cookie
         final setCookie = resp.headers['set-cookie'];
         if (setCookie != null && setCookie.isNotEmpty) {
-          // Store only cookie pair(s) before first ';'
           final cookiePair = setCookie.split(',').first.split(';').first.trim();
           await _saveCookie(cookiePair);
         }
-        // Save user body (Traccar returns user JSON when session valid)
         if (resp.body.isNotEmpty) {
           try {
             final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -106,7 +92,6 @@ class TraccarAuthService {
     }
   }
 
-  /// Login with email/username and password via POST /api/session
   Future<(bool success, String? message)> login(
       {required String email, required String password}) async {
     if (baseUrl.isEmpty) {
@@ -144,7 +129,6 @@ class TraccarAuthService {
     }
   }
 
-  /// Logout via DELETE /api/session
   Future<void> logout() async {
     if (baseUrl.isEmpty) {
       await _clearCookie();
