@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/login_page.dart';
-import 'pages/home_page.dart';
+import 'pages/main_page.dart';
 import 'services/traccar_auth_service.dart';
 
 Future<void> main() async {
@@ -40,7 +40,7 @@ class AuthGate extends StatelessWidget {
         }
         final loggedIn = snapshot.data == true;
         if (loggedIn) {
-          return const HomePage(title: 'Manager');
+          return const MainPage(title: 'Manager');
         } else {
           return const LoginPage();
         }

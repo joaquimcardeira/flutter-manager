@@ -2,39 +2,30 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
 import '../screens/devices_list_screen.dart';
 import '../services/traccar_socket_service.dart';
 import '../services/traccar_api_service.dart';
 import '../models/device.dart';
 import '../models/position.dart';
+import '../widgets/map_widget.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
-
+class MainPage extends StatefulWidget {
+  const MainPage({super.key, required this.title});
   final String title;
-
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<MainPage> createState() => _MainPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  MapLibreMapController? mapController;
+class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-  String? _mapStyle;
   final TraccarSocketService _socketService = TraccarSocketService();
   final TraccarApiService _apiService = TraccarApiService();
   StreamSubscription? _wsSub;
 
-  // Traccar data state
-  Map<int, Device> _devices = {};
-  Map<int, Position> _positions = {};
-
-  // Default location (San Francisco)
-  final LatLng _center = const LatLng(37.7749, -122.4194);
+  final Map<int, Device> _devices = {};
+  final Map<int, Position> _positions = {};
 
   // Icons for bottom navigation
   final List<IconData> _iconList = [
@@ -47,7 +38,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadMapStyle();
     _initializeData();
   }
 
@@ -58,21 +48,11 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  /// Update positions state and trigger map refresh
+  /// Update positions state
   void _updatePositions(Map<int, Position> newPositions) {
-    final hadNoPositions = _positions.isEmpty;
-
     setState(() {
       _positions.addAll(newPositions);
     });
-
-    // Update map after state change
-    _updateMapSymbols();
-
-    // Fit map to devices on first position update
-    if (hadNoPositions && _positions.isNotEmpty) {
-      _fitMapToDevices();
-    }
   }
 
   /// Fetch initial data from API, then connect to websocket for real-time updates
@@ -88,9 +68,6 @@ class _HomePageState extends State<HomePage> {
       devicesMap[device.id] = device;
     }
     _updateDevices(devicesMap);
-
-    dev.log('[Init] Loaded ${_devices.length} devices, ${_positions.length} positions',
-        name: 'TraccarInit');
 
     await _connectSocket();
   }
@@ -114,21 +91,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMapView() {
-    if (_mapStyle == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Stack(
       children: [
-        MapLibreMap(
-          onMapCreated: _onMapCreated,
-          initialCameraPosition: CameraPosition(
-            target: _center,
-            zoom: 11.0,
-          ),
-          styleString: _mapStyle!,
-          myLocationEnabled: true,
-          myLocationTrackingMode: MyLocationTrackingMode.tracking,
+        MapWidget(
+          devices: _devices,
+          positions: _positions,
         ),
         Positioned(
           bottom: 80,
@@ -257,134 +224,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Use circles instead of symbols since we don't have fonts in custom style
-  final Map<int, Circle> _mapCircles = {};
-
-  Future<void> _updateMapSymbols() async {
-    if (mapController == null) {
-      dev.log('[Map] MapController is null, skipping symbol update', name: 'TraccarMap');
-      return;
-    }
-
-    dev.log('[Map] Updating symbols - Devices: ${_devices.length}, Positions: ${_positions.length}',
-        name: 'TraccarMap');
-
-    try {
-      // Remove circles for devices that no longer have positions
-      final circlesToRemove = <int>[];
-      for (var deviceId in _mapCircles.keys) {
-        if (!_positions.containsKey(deviceId)) {
-          circlesToRemove.add(deviceId);
-        }
-      }
-      for (var deviceId in circlesToRemove) {
-        final circle = _mapCircles.remove(deviceId);
-        if (circle != null) {
-          await mapController!.removeCircle(circle);
-        }
-      }
-
-      // Add or update circles for devices with positions
-      for (var entry in _positions.entries) {
-        final deviceId = entry.key;
-        final position = entry.value;
-        final device = _devices[deviceId];
-
-        if (device == null) {
-          dev.log('[Map] No device found for position deviceId=$deviceId', name: 'TraccarMap');
-          continue;
-        }
-
-        final latLng = LatLng(position.latitude, position.longitude);
-        dev.log('[Map] Adding circle for ${device.name} at $latLng', name: 'TraccarMap');
-
-        // Remove old circle if exists
-        final oldCircle = _mapCircles[deviceId];
-        if (oldCircle != null) {
-          await mapController!.removeCircle(oldCircle);
-        }
-
-        // Add new circle marker
-        final circle = await mapController!.addCircle(
-          CircleOptions(
-            geometry: latLng,
-            circleRadius: 8,
-            circleColor: '#FF0000',
-            circleStrokeWidth: 2,
-            circleStrokeColor: '#FFFFFF',
-          ),
-        );
-        _mapCircles[deviceId] = circle;
-      }
-
-      dev.log('[Map] Successfully updated ${_mapCircles.length} circle(s)', name: 'TraccarMap');
-    } catch (e, stack) {
-      dev.log('[Map] Error updating symbols: $e', name: 'TraccarMap', error: e, stackTrace: stack);
-    }
-  }
-
   @override
   void dispose() {
     _wsSub?.cancel();
     _socketService.close();
     super.dispose();
-  }
-
-  Future<void> _loadMapStyle() async {
-    final style = await rootBundle.loadString('assets/google_maps_style.json');
-    setState(() {
-      _mapStyle = style;
-    });
-  }
-
-  void _onMapCreated(MapLibreMapController controller) {
-    mapController = controller;
-    dev.log('[Map] Map created, controller ready', name: 'TraccarMap');
-
-    // If we already have positions, update symbols and fit bounds
-    if (_positions.isNotEmpty) {
-      _updateMapSymbols();
-      _fitMapToDevices();
-    }
-  }
-
-  /// Fit map camera to show all devices
-  void _fitMapToDevices() {
-    if (mapController == null || _positions.isEmpty) return;
-
-    final positions = _positions.values.toList();
-
-    // Find bounds
-    double minLat = positions.first.latitude;
-    double maxLat = positions.first.latitude;
-    double minLng = positions.first.longitude;
-    double maxLng = positions.first.longitude;
-
-    for (var pos in positions) {
-      if (pos.latitude < minLat) minLat = pos.latitude;
-      if (pos.latitude > maxLat) maxLat = pos.latitude;
-      if (pos.longitude < minLng) minLng = pos.longitude;
-      if (pos.longitude > maxLng) maxLng = pos.longitude;
-    }
-
-    // Add some padding
-    final latPadding = (maxLat - minLat) * 0.1;
-    final lngPadding = (maxLng - minLng) * 0.1;
-
-    dev.log('[Map] Fitting bounds: SW($minLat,$minLng) NE($maxLat,$maxLng)', name: 'TraccarMap');
-
-    mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat - latPadding, minLng - lngPadding),
-          northeast: LatLng(maxLat + latPadding, maxLng + lngPadding),
-        ),
-        left: 50,
-        top: 50,
-        right: 50,
-        bottom: 150, // Extra padding for bottom nav
-      ),
-    );
   }
 
   void _onMenuItemTapped(int index) {
