@@ -35,9 +35,9 @@
       "type": "symbol",
       "source": "devices-source",
       "layout": {
-        "icon-image": "truck",
+        "icon-image": "{category}_{baseRotation}",
         "text-field": "{name}",
-        "text-size": 30,
+        "text-size": 20,
         "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
         "text-offset": [0, 2],
         "text-anchor": "top"

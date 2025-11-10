@@ -76,9 +76,10 @@ class _MapViewState extends State<MapView> {
         },
         'properties': {
           'deviceId': deviceId,
-          'category': device.category,
+          'category': 'truck', // device.category,
           'name': device.name,
           'status': device.status,
+          'baseRotation': (position.course / 6).floor().toString().padLeft(3, '0')
         },
       });
     }
@@ -133,7 +134,10 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> _onStyleLoaded() async {
-    await addImageFromAsset("truck", "assets/map/icons/truck_000.png");
+    for (int i = 0; i < 60; i++) {
+      final iconNumber = i.toString().padLeft(3, '0');
+      await addImageFromAsset("truck_$iconNumber", "assets/map/icons/truck_$iconNumber.png");
+    }
   }
 
   @override
