@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'pages/login_page.dart';
 import 'pages/main_page.dart';
 import 'services/auth_service.dart';
@@ -29,6 +30,11 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On web, skip login and go straight to main page (uses token auth)
+    if (kIsWeb) {
+      return const MainPage();
+    }
+    // On native, check session
     final auth = AuthService();
     return FutureBuilder<bool>(
       future: auth.sessionExists(),

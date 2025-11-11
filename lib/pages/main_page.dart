@@ -44,7 +44,7 @@ class _MainPageState extends State<MainPage> {
     for (var device in devices) { devicesMap[device.id] = device; }
     final positions = await _apiService.fetchPositions();
     final positionsMap = <int, Position>{};
-    for (var position in positions) { positionsMap[position.id] = position; }
+    for (var position in positions) { positionsMap[position.deviceId] = position; }
     setState(() {
       _devices.addAll(devicesMap);
       _positions.addAll(positionsMap);
@@ -61,25 +61,25 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildCurrentScreen() {
-    switch (_selectedIndex) {
-      case 1:
-        return DevicesListView(
+    return IndexedStack(
+      index: _selectedIndex,
+      children: [
+        MapView(
+          devices: _devices,
+          positions: _positions,
+          selectedDevice: _selectedDeviceId,
+        ),
+        DevicesListView(
           devices: _devices,
           positions: _positions,
           onDeviceTap: _onDeviceTap,
-        );
-      case 2:
-        return ProfileView(
+        ),
+        ProfileView(
           deviceCount: _devices.length,
           activeCount: _positions.length,
-        );
-      default:
-        return MapView(
-          devices: _devices,
-          positions: _positions,
-          selectedDeviceId: _selectedDeviceId,
-        );
-    }
+        ),
+      ],
+    );
   }
 
   Future<void> _connectSocket() async {
@@ -94,7 +94,7 @@ class _MainPageState extends State<MainPage> {
         onDone: () => dev.log('[WS] Closed', name: 'WS'),
       );
     } else {
-      dev.log('[WS] Failed to connect', name: 'WS');
+      dev.log('Failed to connect', name: 'WS');
     }
   }
 

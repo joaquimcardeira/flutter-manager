@@ -39,9 +39,9 @@ class Position {
     return Position(
       id: json['id'] as int,
       deviceId: json['deviceId'] as int,
-      deviceTime: DateTime.parse(json['deviceTime'] as String),
-      fixTime: DateTime.parse(json['fixTime'] as String),
-      serverTime: DateTime.parse(json['serverTime'] as String),
+      deviceTime: _parseDateTime(json['deviceTime']),
+      fixTime: _parseDateTime(json['fixTime']),
+      serverTime: _parseDateTime(json['serverTime']),
       valid: json['valid'] as bool? ?? false,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
@@ -53,6 +53,18 @@ class Position {
       batteryLevel: json['attributes']?['batteryLevel'] as int?,
       attributes: json['attributes'] as Map<String, dynamic>?,
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is int) {
+      // Unix milliseconds
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    } else if (value is String) {
+      // ISO 8601 string
+      return DateTime.parse(value);
+    } else {
+      throw FormatException('Invalid datetime format: $value');
+    }
   }
 
   Map<String, dynamic> toJson() {

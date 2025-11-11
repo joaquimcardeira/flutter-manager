@@ -9,13 +9,13 @@ import '../constants/map_constants.dart';
 class MapView extends StatefulWidget {
   final Map<int, Device> devices;
   final Map<int, Position> positions;
-  final int? selectedDeviceId;
+  final int? selectedDevice;
 
   const MapView({
     super.key,
     required this.devices,
     required this.positions,
-    this.selectedDeviceId,
+    this.selectedDevice,
   });
 
   @override
@@ -25,6 +25,7 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   MapLibreMapController? mapController;
   bool _hasInitiallyFit = false;
+  bool _mapReady = false;
 
   static const String _sourceId = 'devices-source';
 
@@ -34,14 +35,14 @@ class _MapViewState extends State<MapView> {
     _update();
 
     // Center on selected device if it changed
-    if (widget.selectedDeviceId != null &&
-        widget.selectedDeviceId != oldWidget.selectedDeviceId) {
-      _centerOnDevice(widget.selectedDeviceId!);
+    if (widget.selectedDevice != null &&
+        widget.selectedDevice != oldWidget.selectedDevice) {
+      _centerOnDevice(widget.selectedDevice!);
     }
   }
 
   void _update() {
-    if (widget.positions.isNotEmpty) {
+    if (widget.positions.isNotEmpty && _mapReady) {
       _updateMapSource();
       if (!_hasInitiallyFit) {
         _fitMapToDevices();
@@ -59,13 +60,10 @@ class _MapViewState extends State<MapView> {
       dev.log('Cannot center on device $deviceId: no position found', name: 'Map');
       return;
     }
-
-    dev.log('[Map] Centering on device $deviceId at (${position.latitude}, ${position.longitude})', name: 'Map');
-
     mapController!.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(position.latitude, position.longitude),
-        20.0, // Zoom level for focused view
+        18, // Zoom level for focused view
       )
     );
   }
@@ -75,6 +73,7 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> addImageFromAsset(String name, String assetName) async {
+    dev.log('adding $name, $assetName');
     final bytes = await rootBundle.load(assetName);
     final list = bytes.buffer.asUint8List();
     return mapController!.addImage(name, list);
@@ -176,6 +175,8 @@ class _MapViewState extends State<MapView> {
           }
         }
       }
+      _mapReady = true;
+      _update();
     } catch (e) {
       dev.log('_onStyleLoaded', error: e);
     }

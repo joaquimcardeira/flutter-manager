@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 const categoryIcons = [
   'veh_pickup_03',
   'veh_truck_02'
@@ -16,6 +14,5 @@ String get traccarBaseUrl {
   if (envValue.isNotEmpty) {
     return envValue;
   }
-  // Return empty string for web, otherwise use default
-  return kIsWeb ? '' : 'http://gps.frotaweb.com';
+  return 'http://gps.frotaweb.com';
 }
