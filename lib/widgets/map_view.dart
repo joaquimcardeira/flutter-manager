@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/device.dart';
 import '../models/position.dart';
-import '../constants/map_constants.dart';
+import '../utils/constants.dart';
 
 class MapView extends StatefulWidget {
   final Map<int, Device> devices;

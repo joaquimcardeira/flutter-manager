@@ -1,7 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../constants/map_constants.dart';
+import '../utils/constants.dart';
 import 'auth_service.dart';
 import 'package:web_socket_channel/io.dart';
 

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/map_constants.dart';
+import '../utils/constants.dart';
 
 class AuthService {
   static const String _cookieKey = 'traccar_cookie';
