@@ -18,7 +18,7 @@ class SocketService {
 
     // Build ws/wss URL
     final wsScheme = base.startsWith('https') ? 'wss' : 'ws';
-    final wsUrl = base.replaceFirst(RegExp('^https?'), wsScheme) + '/api/socket';
+    final wsUrl = '${base.replaceFirst(RegExp('^https?'), wsScheme)}/api/socket';
 
     try {
       final cookie = await AuthService().getCookie();

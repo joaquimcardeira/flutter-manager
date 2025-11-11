@@ -42,7 +42,6 @@ class _MapViewState extends State<MapView> {
 
   void _onMapCreated(MapLibreMapController controller) {
     mapController = controller;
-    _update();
   }
 
   Future<void> addImageFromAsset(String name, String assetName) async {
@@ -77,10 +76,10 @@ class _MapViewState extends State<MapView> {
         },
         'properties': {
           'deviceId': deviceId,
-          'category': 'truck', // device.category,
+          'category': getMapIcon(device.category),
           'name': device.name,
-          'status': device.status,
-          'baseRotation': (position.course / 6).floor().toString().padLeft(3, '0')
+          'color': device.status == 'online' ? 'green' : 'red',
+          'baseRotation': ((position.course / 360) * rotationFrames).floor().toString().padLeft(3, '0')
         },
       });
     }
@@ -92,7 +91,6 @@ class _MapViewState extends State<MapView> {
 
     // Update the source that's already defined in the style
     await mapController!.setGeoJsonSource(_sourceId, geojson);
-    // dev.log('[Map] Updated source with $features feature(s)', name: 'TraccarMap');
   }
 
   /// Fit map camera to show all devices
@@ -164,7 +162,6 @@ class _MapViewState extends State<MapView> {
   }
 
   getMapIcon(String? category) {
-    dev.log(category!);
     switch (category) {
       default:
         return vehicleTypes[0];
