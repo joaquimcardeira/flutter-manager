@@ -10,10 +10,8 @@ const rotationFrames = 16;
 
 String get traccarBaseUrl {
   const envValue = String.fromEnvironment('TRACCAR_BASE_URL');
-  if (envValue.isNotEmpty) {
-    return envValue;
-  }
-  return 'http://gps.frotaweb.com';
+  if (envValue.isNotEmpty) { return envValue; }
+  return 'https://dash.frotaweb.com';
 }
 
 const String sourceId = 'devices-source';
