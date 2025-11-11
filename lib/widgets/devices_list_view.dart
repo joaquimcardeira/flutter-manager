@@ -6,12 +6,14 @@ class DevicesListView extends StatelessWidget {
   final Map<int, Device> devices;
   final Map<int, Position> positions;
   final VoidCallback? onRefresh;
+  final void Function(int deviceId)? onDeviceTap;
 
   const DevicesListView({
     super.key,
     required this.devices,
     required this.positions,
     this.onRefresh,
+    this.onDeviceTap,
   });
 
   @override
@@ -63,6 +65,7 @@ class DevicesListView extends StatelessWidget {
           return _DeviceListItem(
             device: device,
             position: position,
+            onTap: onDeviceTap,
           );
         },
       ),
@@ -73,10 +76,12 @@ class DevicesListView extends StatelessWidget {
 class _DeviceListItem extends StatelessWidget {
   final Device device;
   final Position? position;
+  final void Function(int deviceId)? onTap;
 
   const _DeviceListItem({
     required this.device,
     this.position,
+    this.onTap,
   });
 
   Color _getStatusColor() {
@@ -218,7 +223,7 @@ class _DeviceListItem extends StatelessWidget {
             ? const Icon(Icons.block, color: Colors.red)
             : const Icon(Icons.chevron_right),
         onTap: () {
-          // TODO: Navigate to device details
+          onTap?.call(device.id);
         },
       ),
     );

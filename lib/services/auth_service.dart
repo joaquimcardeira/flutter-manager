@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../env/env.dart';
+import '../constants/map_constants.dart';
 
 class AuthService {
   static const String _cookieKey = 'traccar_cookie';
   static const String _userKey = 'traccar_user';
 
-  static String get baseUrl => Env.traccarBaseUrl;
+  static String get baseUrl => traccarBaseUrl;
 
   Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 
@@ -66,8 +66,6 @@ class AuthService {
   }
 
   Future<bool> sessionExists() async {
-    if (baseUrl.isEmpty) return false;
-
     final uri = Uri.parse('$baseUrl/api/session');
     final headers = await _effectiveHeaders();
     try {
@@ -94,9 +92,6 @@ class AuthService {
 
   Future<(bool success, String? message)> login(
       {required String email, required String password}) async {
-    if (baseUrl.isEmpty) {
-      return (false, 'Traccar base URL not configured');
-    }
     final uri = Uri.parse('$baseUrl/api/session');
     try {
       final resp = await http.post(
@@ -119,7 +114,7 @@ class AuthService {
            dev.log((await http.post(
                 Uri.parse('$baseUrl/api/session/token'),
                 headers: headers,
-                body: 'expiration=${DateTime.now().add(Duration(days: 1)).toIso8601String()}'
+                body: 'expiration=${Uri.encodeComponent(DateTime.now().add(Duration(days: 1)).toIso8601String())}Z'
             )) as String);
 
           } catch (_) {}

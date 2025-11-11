@@ -9,11 +9,13 @@ import '../constants/map_constants.dart';
 class MapView extends StatefulWidget {
   final Map<int, Device> devices;
   final Map<int, Position> positions;
+  final int? selectedDeviceId;
 
   const MapView({
     super.key,
     required this.devices,
     required this.positions,
+    this.selectedDeviceId,
   });
 
   @override
@@ -30,6 +32,12 @@ class _MapViewState extends State<MapView> {
   void didUpdateWidget(MapView oldWidget) {
     super.didUpdateWidget(oldWidget);
     _update();
+
+    // Center on selected device if it changed
+    if (widget.selectedDeviceId != null &&
+        widget.selectedDeviceId != oldWidget.selectedDeviceId) {
+      _centerOnDevice(widget.selectedDeviceId!);
+    }
   }
 
   void _update() {
@@ -38,6 +46,26 @@ class _MapViewState extends State<MapView> {
       _fitMapToDevices();
       _hasInitiallyFit = true;
     }
+  }
+
+  /// Center map camera on a specific device
+  void _centerOnDevice(int deviceId) {
+    if (mapController == null) return;
+
+    final position = widget.positions[deviceId];
+    if (position == null) {
+      dev.log('Cannot center on device $deviceId: no position found', name: 'Map');
+      return;
+    }
+
+    dev.log('[Map] Centering on device $deviceId at (${position.latitude}, ${position.longitude})', name: 'Map');
+
+    mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(position.latitude, position.longitude),
+        20.0, // Zoom level for focused view
+      )
+    );
   }
 
   void _onMapCreated(MapLibreMapController controller) {
@@ -156,9 +184,10 @@ class _MapViewState extends State<MapView> {
     return MapLibreMap(
       onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
-      initialCameraPosition: CameraPosition(target: LatLng(0, 0)),
+      initialCameraPosition: CameraPosition(target: LatLng(0, 0), tilt: 45),
       styleString: "assets/map_style.json",
       myLocationEnabled: true,
+
     );
   }
 

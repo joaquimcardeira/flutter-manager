@@ -25,6 +25,7 @@ class _MainPageState extends State<MainPage> {
 
   final Map<int, Device> _devices = {};
   final Map<int, Position> _positions = {};
+  int? _selectedDeviceId;
   final List<IconData> _iconList = [
     Icons.map_outlined,
     Icons.list,
@@ -46,12 +47,20 @@ class _MainPageState extends State<MainPage> {
     await _connectSocket();
   }
 
+  void _onDeviceTap(int deviceId) {
+    setState(() {
+      _selectedDeviceId = deviceId;
+      _selectedIndex = 0; // Switch to map view
+    });
+  }
+
   Widget _buildCurrentScreen() {
     switch (_selectedIndex) {
       case 1:
         return DevicesListView(
           devices: _devices,
           positions: _positions,
+          onDeviceTap: _onDeviceTap,
         );
       case 2:
         return ProfileView(
@@ -62,6 +71,7 @@ class _MainPageState extends State<MainPage> {
         return MapView(
           devices: _devices,
           positions: _positions,
+          selectedDeviceId: _selectedDeviceId,
         );
     }
   }
