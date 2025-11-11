@@ -1,0 +1,53 @@
+{
+  "version": 8,
+  "name": "Map Style",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "google-maps-raster": {
+      "type": "raster",
+      "tiles": [
+        "https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+        "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+        "https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+        "https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+      ],
+      "tileSize": 256,
+      "attribution": "&copy; Google Maps"
+    },
+    "devices-source": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "google-maps-layer",
+      "type": "raster",
+      "source": "google-maps-raster",
+      "minzoom": 0,
+      "maxzoom": 22
+    },
+    {
+      "id": "devices-layer",
+      "type": "symbol",
+      "source": "devices-source",
+      "layout": {
+        "icon-image": "{category}_{color}_{baseRotation}",
+        "icon-size": 2.5,
+        "text-field": "{name}",
+        "text-size": 20,
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-offset": [0, 2],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#000000",
+        "text-halo-color": "#FFFFFF",
+        "text-halo-width": 2
+      }
+    }
+  ]
+}
