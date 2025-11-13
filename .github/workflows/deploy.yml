@@ -37,13 +37,27 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build web --base-href "/${{ github.event.repository.name }}/"
-      - run: flutter build ios --build-number ${{ github.run_number }} --config-only --no-codesign"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: 'build/web'
-      - uses: actions/upload-pages-artifact@v3
+      - run: flutter build ios --build-number ${{ github.run_number }} --config-only --no-codesign
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          path: 'ios'
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+      - run: bundle exec fastlane match
+        working-directory: ios
+      - run: bundle exec fastlane beta
+        working-directory: ios
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY: "${{vars.APP_STORE_CONNECT_API_KEY_KEY}}"
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: "${{vars.APP_STORE_CONNECT_API_KEY_ISSUER_ID}}"
+          APP_STORE_CONNECT_API_KEY_KEY_ID: "${{vars.APP_STORE_CONNECT_API_KEY_KEY_ID}}"
+
+
 
   deploy-web:
     environment:

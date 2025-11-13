@@ -1,0 +1,3 @@
+google_cloud_bucket_name("fastlane-moviflotte")
+storage_mode("google_cloud")
+type("appstore") # The default type, can be: appstore, adhoc, enterprise or development
