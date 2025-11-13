@@ -202,7 +202,7 @@ class _MapViewState extends State<MapView> {
             myLocationEnabled: true,
           ),
           Positioned(
-            top: 16,
+            top: 60,
             right: 0,
             child: SafeArea(
               child: AnimatedSize(
