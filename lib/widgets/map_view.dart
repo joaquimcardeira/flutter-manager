@@ -5,6 +5,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/device.dart';
 import '../models/position.dart';
 import '../utils/constants.dart';
+import '../map/styles.dart';
 
 class MapView extends StatefulWidget {
   final Map<int, Device> devices;
@@ -27,31 +28,21 @@ class _MapViewState extends State<MapView> {
   bool _initialFitDone = false;
   bool _mapReady = false;
   bool _menuExpanded = false;
-  int _currentIndex = 0;
+  int _styleIndex = 0;
+  late Future<String> _initialStyleFuture;
 
-  // Demo styles
-  static const String _dark = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-  static const String _light = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-  static const String _google = 'assets/map_style.json';
-
-  late final List<_StyleEntry> _styles = [
-    const _StyleEntry('Dark', _dark),
-    const _StyleEntry('Light', _light),
-    const _StyleEntry('Google', _google),
-  ];
-
+  @override
+  void initState() {
+    super.initState();
+    _initialStyleFuture = MapStyles.getStyleString(MapStyles.configs[_styleIndex]);
+  }
 
   Future<void> _applyStyle(int index) async {
     if (mapController == null) return;
     setState(() => _mapReady = false);
-    final entry = _styles[index];
-    dev.log('Switching to style: ${entry.label}');
-    try {
-      await mapController!.setStyle(entry.styleString);
-    } catch (e, st) {
-      dev.log('Failed to set style ${entry.label}: $e', stackTrace: st);
-    }
-    setState(() { _currentIndex = index; });
+    final styleString = await MapStyles.getStyleString(MapStyles.configs[index]);
+    await mapController!.setStyle(styleString);
+    setState(() { _styleIndex = index; });
   }
 
   @override
@@ -65,7 +56,7 @@ class _MapViewState extends State<MapView> {
   }
 
   void _update() {
-    if (widget.positions.isNotEmpty && _mapReady) {
+    if (widget.positions.isNotEmpty && mapController != null && _mapReady) {
       _updateMapSource();
       if (!_initialFitDone) {
         _fitMapToDevices();
@@ -95,16 +86,12 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> _updateMapSource() async {
-    if (mapController == null) { return; }
     final List<Map<String, dynamic>> features = [];
     for (var entry in widget.positions.entries) {
       final deviceId = entry.key;
       final position = entry.value;
       final device = widget.devices[deviceId];
-      if (device == null) {
-        dev.log('No device found for position deviceId=$deviceId', name: 'Map');
-        continue;
-      }
+      if (device == null) { continue; }
       final baseRotation =
           (position.course / (360 / rotationFrames)).floor() *
           (360 / rotationFrames);
@@ -125,7 +112,7 @@ class _MapViewState extends State<MapView> {
         },
       });
     }
-    await mapController!.setGeoJsonSource(sourceId, {'type': 'FeatureCollection', 'features': features});
+    await mapController!.setGeoJsonSource(MapStyles.sourceId, {'type': 'FeatureCollection', 'features': features});
   }
 
   void _fitMapToDevices() {
@@ -147,11 +134,6 @@ class _MapViewState extends State<MapView> {
     // Add some padding
     final latPadding = (maxLat - minLat) * 0.1;
     final lngPadding = (maxLng - minLng) * 0.1;
-
-    dev.log(
-      'Fitting bounds: SW($minLat,$minLng) NE($maxLat,$maxLng)',
-      name: 'Map',
-    );
 
     mapController!.animateCamera(
       CameraUpdate.newLatLngBounds(
@@ -192,15 +174,21 @@ class _MapViewState extends State<MapView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          MapLibreMap(
-            onMapCreated: _onMapCreated,
-            onStyleLoadedCallback: _onStyleLoaded,
-            initialCameraPosition: CameraPosition(target: LatLng(0, 0)),
-            styleString: "assets/map_style.json",
-            myLocationEnabled: true,
-          ),
+      body: FutureBuilder<String>(
+        future: _initialStyleFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return Stack(
+            children: [
+              MapLibreMap(
+                onMapCreated: _onMapCreated,
+                onStyleLoadedCallback: _onStyleLoaded,
+                initialCameraPosition: CameraPosition(target: LatLng(0, 0)),
+                styleString: snapshot.data!,
+                myLocationEnabled: true,
+              ),
           Positioned(
             top: 60,
             right: 0,
@@ -246,9 +234,9 @@ class _MapViewState extends State<MapView> {
                             ),
                           ),
                         ),
-                        ...List.generate(_styles.length, (index) {
-                          final style = _styles[index];
-                          final isSelected = _currentIndex == index;
+                        ...List.generate(MapStyles.configs.length, (index) {
+                          final config = MapStyles.configs[index];
+                          final isSelected = _styleIndex == index;
                           return InkWell(
                             onTap: () => _applyStyle(index),
                             child: Padding(
@@ -268,7 +256,7 @@ class _MapViewState extends State<MapView> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _mapReady || !isSelected ? style.label : 'Loading...',
+                                      _mapReady || !isSelected ? config.name : 'Loading...',
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         color: isSelected
                                           ? Theme.of(context).colorScheme.primary
@@ -292,6 +280,8 @@ class _MapViewState extends State<MapView> {
             ),
           ),
         ],
+      );
+        },
       ),
     );
   }
@@ -304,10 +294,4 @@ class _MapViewState extends State<MapView> {
         return categoryIcons[0];
     }
   }
-}
-
-class _StyleEntry {
-  final String label;
-  final String styleString;
-  const _StyleEntry(this.label, this.styleString);
 }

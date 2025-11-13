@@ -112,7 +112,6 @@ class _MainPageState extends State<MainPage> {
         final device = Device.fromJson(deviceJson as Map<String, dynamic>);
         newDevices[device.id] = device;
       }
-      dev.log('Received ${devicesList.length} device(s)', name: 'WS');
     }
 
     if (data['positions'] != null) {
@@ -121,7 +120,6 @@ class _MainPageState extends State<MainPage> {
         final position = Position.fromJson(positionJson as Map<String, dynamic>);
         newPositions[position.deviceId] = position;
       }
-      dev.log('Received ${positionsList.length} position(s)', name: 'WS');
     }
 
     if (newDevices.isNotEmpty || newPositions.isNotEmpty) {
